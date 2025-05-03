@@ -7,94 +7,128 @@ export default function Home() {
   const [error, setError] = useState('');
 
   const handleCheckResult = async () => {
+    if (!studentId.trim()) {
+      setError("⚠️ Please enter a valid Student ID.");
+      return;
+    }
+
     setLoading(true);
     setResult([]);
     setError('');
 
-    const res = await fetch(`/api/fetchResult?studentId=${studentId}`);
-    const data = await res.json();
+    try {
+      const res = await fetch(`/api/fetchResult?studentId=${studentId}`);
+      const data = await res.json();
 
-    if (data.result) {
-      setResult(data.result);
-    } else {
-      setError(data.error || 'No result found');
+      if (res.ok && data.result) {
+        setResult(data.result);
+      } else {
+        setError(data.error || '⚠️ No result found.');
+      }
+    } catch (err) {
+      setError('❌ Something went wrong. Please try again later.');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
-  // Get CGPA if available
   const cgpa = result.length > 0 ? result[0].cgpa : null;
   const semesterInfo = result.length > 0 ? `${result[0].semesterName} ${result[0].semesterYear}` : null;
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.heading}>🎓 DIU Result Checker</h1>
-      <p style={{textAlign: 'center', marginTop: '-1rem', color: '#666'}}>Developer: Shaikat Zaman Shipon</p>
+      <div style={styles.card}>
+        <h1 style={styles.heading}>🎓 DIU Smart Result Checker</h1>
+        <p style={styles.dev}>🚀 Developed by Shaikat Zaman Shipon</p>
 
-      <div style={styles.inputGroup}>
-        <input
-          type="text"
-          placeholder="Enter Student ID"
-          value={studentId}
-          onChange={(e) => setStudentId(e.target.value)}
-          style={styles.input}
-        />
-        <button onClick={handleCheckResult} style={styles.button}>
-          {loading ? 'Loading...' : 'Check Result'}
-        </button>
-      </div>
-
-      {error && <p style={styles.error}>{error}</p>}
-
-      {result.length > 0 && (
-        <div style={styles.resultBox}>
-          <p><strong>📘 Student ID:</strong> {result[0].studentId}</p>
-          <p><strong>📅 Semester:</strong> {semesterInfo}</p>
-          <p><strong>🎯 CGPA:</strong> {cgpa ?? 'Pending'}</p>
-          <p><strong>📌 Status:</strong> {result.some(r => r.gradeLetter.includes("pending")) ? 'Evaluation Pending' : 'Completed'}</p>
-
-          <h2 style={styles.subHeading}>📚 Course Details</h2>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th>Course Code</th>
-                <th>Title</th>
-                <th>Credit</th>
-                <th>Grade</th>
-                <th>Grade Point</th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.map((course, index) => (
-                <tr key={index}>
-                  <td>{course.customCourseId}</td>
-                  <td>{course.courseTitle}</td>
-                  <td>{course.totalCredit}</td>
-                  <td>{course.gradeLetter}</td>
-                  <td>{course.pointEquivalent ?? 'N/A'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div style={styles.inputGroup}>
+          <input
+            type="text"
+            placeholder="Enter Student ID"
+            value={studentId}
+            onChange={(e) => setStudentId(e.target.value)}
+            style={styles.input}
+          />
+          <button onClick={handleCheckResult} style={styles.button} disabled={loading}>
+            {loading ? 'Checking...' : 'Check Result'}
+          </button>
         </div>
-      )}
+
+        {error && <p style={styles.error}>{error}</p>}
+
+        {result.length > 0 && (
+          <div style={styles.resultBox}>
+          <h2 style={{ ...styles.resultHeading, color: '#006400' }}>📋 Result Summary</h2> 
+            <div style={styles.resultInfo}>
+              <p><strong>🆔 <span style={{ color: '#0070f3' }}>Student ID:</span></strong> <span style={styles.resultValue}>{result[0].studentId}</span></p>
+              <p><strong>📅 <span style={{ color: '#0070f3' }}>Semester:</span></strong> <span style={styles.resultValue}>{semesterInfo}</span></p>
+              <p><strong>🎯 <span style={{ color: '#0070f3' }}>SGPA:</span></strong> <span style={{ color: '#D35400', fontWeight: 'bold' }}>{cgpa ?? 'Pending'}</span></p>
+              <p><strong>📌 <span style={{ color: '#0070f3' }}>Status:</span></strong>
+                <span style={{ color: result.some(r => r.gradeLetter.toLowerCase().includes("pending")) ? '#d9534f' : '#27AE60', fontWeight: 'bold' }}>
+                  {result.some(r => r.gradeLetter.toLowerCase().includes("pending")) ? 'Evaluation Pending' : 'Completed'}
+                </span>
+              </p>
+            </div>
+
+            <table style={styles.table}>
+              <thead>
+                <tr style={styles.tableHeaderRow}>
+                  <th style={styles.tableHeader}>📚 Code</th>
+                  <th style={styles.tableHeader}>Course Title</th>
+                  <th style={styles.tableHeader}>Credit</th>
+                  <th style={styles.tableHeader}>Grade</th>
+                  <th style={styles.tableHeader}>Point</th>
+                </tr>
+              </thead>
+              <tbody>
+                {result.map((course, index) => (
+                  <tr key={index} style={index % 2 === 0 ? styles.evenRow : styles.oddRow}>
+                    <td style={{ color: '#006400' }}>{course.customCourseId}</td> {/* Dark Green */}
+                    <td style={{ color: '#006400' }}>{course.courseTitle}</td> {/* Dark Green */}
+                    <td style={{ color: '#006400' }}>{course.totalCredit}</td> {/* Dark Green */}
+                    <td style={{ fontWeight: 'bold', color: '#006400' }}>{course.gradeLetter}</td> {/* Dark Green */}
+                    <td style={{ color: '#006400' }}>{course.pointEquivalent ?? 'N/A'}</td> {/* Dark Green */}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-// Basic styles
+// 🔧 Enhanced Styles with Sky Blue Background
 const styles = {
   container: {
-    fontFamily: 'Segoe UI, sans-serif',
-    padding: '2rem',
-    backgroundColor: '#f4f6f9',
+    fontFamily: 'Poppins, sans-serif',
+    background: '#87CEEB', // Sky Blue
     minHeight: '100vh',
+    padding: '3rem 1rem',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: '16px',
+    boxShadow: '0 20px 30px rgba(64, 14, 226, 0)',
+    padding: '2.5rem',
+    width: '100%',
+    maxWidth: '950px',
   },
   heading: {
+    fontSize: '2.5rem',
     textAlign: 'center',
-    fontSize: '2rem',
-    marginBottom: '1.5rem',
+    marginBottom: '0.2rem',
+    color: '#222',
+  },
+  dev: {
+    textAlign: 'center',
+    marginBottom: '2rem',
+    color: '#666',
+    fontSize: '0.95rem',
   },
   inputGroup: {
     display: 'flex',
@@ -102,50 +136,71 @@ const styles = {
     marginBottom: '2rem',
   },
   input: {
-    padding: '0.5rem',
+    padding: '0.75rem',
     fontSize: '1rem',
     width: '300px',
+    borderRadius: '8px 0 0 8px',
     border: '1px solid #ccc',
-    borderRadius: '4px 0 0 4px',
+    outline: 'none',
   },
   button: {
-    padding: '0.5rem 1rem',
+    padding: '0.75rem 1.5rem',
     fontSize: '1rem',
     backgroundColor: '#0070f3',
-    color: 'white',
+    color: '#fff',
     border: 'none',
-    borderRadius: '0 4px 4px 0',
+    borderRadius: '0 8px 8px 0',
     cursor: 'pointer',
+    transition: 'background-color 0.3s ease',
   },
   error: {
-    color: 'red',
+    color: '#d9534f',
     textAlign: 'center',
+    marginBottom: '1rem',
   },
   resultBox: {
-    backgroundColor: 'white',
-    padding: '2rem',
-    borderRadius: '10px',
-    boxShadow: '0 0 10px rgba(0,0,0,0.1)',
-    maxWidth: '900px',
-    margin: '0 auto',
-  },
-  subHeading: {
     marginTop: '2rem',
+    background: '#ffffff',
+    padding: '1.5rem',
+    borderRadius: '12px',
+    border: '1px solid #eee',
+  },
+  resultHeading: {
+    fontSize: '1.4rem',
     marginBottom: '1rem',
-    fontSize: '1.2rem',
+    borderBottom: '2px solid #0070f3',
+    paddingBottom: '0.5rem',
+  },
+  resultInfo: {
+    marginBottom: '1.5rem',
+    lineHeight: '1.8',
+
+  },
+  resultValue: {
+    color: '#222222',
+    fontWeight: '5000',
   },
   table: {
     width: '100%',
     borderCollapse: 'collapse',
     fontSize: '0.95rem',
+    textAlign: 'left',
   },
-  th: {
+  tableHeaderRow: {
     backgroundColor: '#0070f3',
-    color: 'white',
-    padding: '10px',
+    color: '#fff',
   },
-  td: {
-    border: '1px solid #ddd',
-    padding: '8px',
+  tableHeader: {
+    padding: '12px',
+    fontWeight: '600',
   },
+  evenRow: {
+    backgroundColor: '#f9f9f9',
+    padding: '10px 12px',
+  },
+  oddRow: {
+    backgroundColor: '#ffffff',
+    padding: '10px 12px',
+  },
+
 };

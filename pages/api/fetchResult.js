@@ -11,13 +11,25 @@ export default async function handler(req, res) {
 
   try {
     const response = await axios.get(url);
+    const data = response.data;
 
-    if (Array.isArray(response.data)) {
-      res.status(200).json({ result: response.data });
-    } else {
-      res.status(404).json({ error: 'Invalid response format' });
+    // Check if data is an array and contains valid course info
+    if (Array.isArray(data) && data.length > 0 && data[0].studentId) {
+      return res.status(200).json({ result: data });
     }
+
+    // If API returns an empty array
+    if (Array.isArray(data) && data.length === 0) {
+      return res.status(404).json({ error: 'No results found for this Student ID.' });
+    }
+
+    // If API returns something unexpected (e.g., object or HTML)
+    return res.status(400).json({ error: 'Unexpected response from server.', raw: data });
+
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch result', detail: error.message });
+    return res.status(500).json({
+      error: 'Failed to fetch result.',
+      detail: error.message,
+    });
   }
 }
